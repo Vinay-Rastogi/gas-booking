@@ -1,0 +1,162 @@
+body {
+  color: #fff;
+  background-image: url(./bgImg.png) !important;
+  background-repeat: repeat;
+  background-size: 100%;
+  font-family: "Roboto", sans-serif;
+}
+
+h2 {
+}
+
+.form-control {
+  height: 41px;
+  background: #f2f2f2;
+  box-shadow: none !important;
+  border: none;
+}
+
+.form-control:focus {
+  background: #e2e2e2;
+}
+
+.form-control,
+.btn {
+  border-radius: 3px;
+}
+
+.signup-form,
+.login-form,
+.gasBooking-form ,
+.viewAllBookings-form,
+.cancelBookings-form {
+  width: 390px;
+  margin-left: 15%;
+  margin-top: 3%;
+  border-radius: 2%;
+  box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px,
+    rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px,
+    rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+}
+
+.signup-form form,
+.login-form form,
+.gasBooking-form form,
+.viewAllBookings-form form,
+.cancelBookings-form form{
+  color: #999;
+  border-radius: 4%;
+  margin-bottom: 15px;
+  background: #fff;
+  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
+  padding: 30px;
+}
+
+.signup-form h2,
+.login-form h2,
+.gasBooking-form h2,
+.viewAllBookings-form h2,
+.cancelBookings-form h2 {
+  color: #333;
+  font-weight: bold;
+  margin-top: 0;
+}
+
+.signup-form hr {
+  margin: 0 -30px 20px;
+}
+
+.signup-form .form-group,
+.login-form .form-group,
+.gasBooking-form .form-group ,
+.viewAllBookings-form .form-group,
+.cancelBookings-form .form-group{
+  margin-bottom: 20px;
+}
+
+.signup-form .row div:first-child {
+  padding-right: 10px;
+}
+
+.signup-form .row div:last-child {
+  padding-left: 10px;
+}
+
+.signup-form .btn,
+.login-form .btn,
+.gasBooking-form .btn,
+.viewAllBookings-form .btn ,
+.cancelBookings-form .btn{
+  font-size: 16px;
+  font-weight: bold;
+  background: #3598dc;
+  border: none;
+  min-width: 140px;
+}
+
+.signup-form .btn:hover,
+.login-form .btn:hover,
+.gasBooking-form .btn:hover,
+.viewAllBookings-form .btn:hover,
+.cancelBookings-form .btn:hover,
+.signup-form .btn:focus,
+.login-form .btn:focus,
+.gasBooking-form .btn:focus,
+.viewAllBookings-form .btn:focus,
+.cancelBookings-form .btn:focus {
+  background: #2389cd !important;
+  outline: none;
+}
+
+.signup-form a,
+.login-form a,
+.gasBooking-form a ,
+.viewAllBookings-form a,
+.cancelBookings-form a{
+  color: #fff;
+  text-decoration: underline;
+}
+
+.signup-form a:hover,
+.login-form a:hover,
+.gasBooking-form a:hover ,
+.viewAllBookings-form a:hover
+.cancelBookings-form a:hover{
+  text-decoration: none;
+}
+
+.signup-form form a,
+.login-form form a,
+.gasBooking-form form a ,
+.viewAllBookings-form form a,
+.cancelBookings-form form a{
+  color: #3598dc;
+  text-decoration: none;
+}
+
+.signup-form form a:hover,
+.login-form form a:hover,
+.gasBooking-form form a:hover ,
+.viewAllBookings-form form a:hover,
+.cancelBookings-form form a:hover{
+  text-decoration: underline;
+}
+
+.signup-form .hint-text,
+.login-form .hint-text {
+  padding-bottom: 15px;
+  text-align: center;
+  background: transparent;
+}
+
+.login-form {
+  margin-top: 12%;
+}
+
+.gasBooking-form ,
+.viewAllBookings-form,
+.cancelBookings-form {
+   
+     margin-top: 15%;
+    
+}     
