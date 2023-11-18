@@ -52,14 +52,14 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     if (document.body.id === 'bookGasPage') {
         redirectToLogin();
-        // document.getElementById('logout').addEventListener('click', logout);
+        document.getElementById('logout').addEventListener('click', logout);
         document.getElementById('bookGasFormButton').addEventListener('click', submitGasBookingForm);
     }
 
     if (document.body.id === 'viewBookings') {
         redirectToLogin();
         fetchAllBookings();
-        // document.getElementById('logout').addEventListener('click', logout);
+        document.getElementById('logout').addEventListener('click', logout);
         document.getElementById('cancelBookingBtn').addEventListener('click', cancelRecentBooking);
         document.getElementById('bookGasBtn').addEventListener('click', redirectToBookGas);
     }
@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             ...getAuthRequestOptions(), // Include authentication headers
             body: JSON.stringify({ address, email }),
         }).then(async res => await res.json()).then(res => {
-            if(Object.keys(res).includes("error")) {
+            if (Object.keys(res).includes("error")) {
                 displayErrorMessage(res.error)
                 return
             }
@@ -200,12 +200,16 @@ document.addEventListener('DOMContentLoaded', async function () {
 
                         document.getElementById('allBookingsList').style.color = 'black';
                         const listItem = document.createElement('li');
+                        listItem.style.padding = '1%';
                         listItem.innerHTML = `
                         <p><strong>Address:</strong> <span class="address">${booking.address}</span></p>
                         <p><strong>Booking Date:</strong> <span class="booking-date">${new Date(booking.bookingDate).toLocaleString()}</span></p>
+                        <hr>
                     `;
                         allBookingsList.appendChild(listItem);
                     });
+
+
                 }
 
             } else {

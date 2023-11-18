@@ -1,7 +1,9 @@
 body {
   color: #fff;
   background-image: url(../bgImg.png) !important;
-  background-repeat: repeat;
+  background-repeat: no-repeat;
+  background-size: 100%;
+  /* background-position-x: -300px; */
   background-size: 100%;
   font-family: "Roboto", sans-serif;
 }
@@ -167,8 +169,5 @@ body {
 }
 
 .bookingContainer {
-  height: 700px;
-  width: 500px;
-  margin-top: 10%;
-  margin-left: 1.5%;
+  width: 40%;
 }
