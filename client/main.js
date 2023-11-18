@@ -1,17 +1,15 @@
 document.addEventListener('DOMContentLoaded', async function () {
-    const backendBaseUrl = 'http://localhost:3000'; // Replace with your actual backend URL
+    const backendBaseUrl = 'http://localhost:3000';
 
     function displayErrorMessage(message) {
         const errorMessageElement = document.getElementById('errorMessage');
         errorMessageElement.innerText = message;
     }
 
-    // Function to get the JWT token from localStorage
     function getAuthToken() {
         return localStorage.getItem('jwtToken');
     }
 
-    // Function to fetch options for authenticated requests
     function getAuthRequestOptions() {
         const authToken = getAuthToken();
         return {
@@ -22,26 +20,21 @@ document.addEventListener('DOMContentLoaded', async function () {
         };
     }
 
-    // Function to check if the user is logged in
     function isLoggedIn() {
         return !!getAuthToken();
     }
 
-    // Function to redirect the user to the login page if not logged in
     function redirectToLogin() {
         if (!isLoggedIn()) {
             window.location.href = 'login.html';
         }
     }
 
-    // Function to redirect the user to the home page if already logged in
     function redirectToHome() {
         if (isLoggedIn()) {
             window.location.href = 'viewAllBooking.html';
         }
     }
-
-    // function to redirect to Book Gas Page
 
     function redirectToBookGas() {
         if (isLoggedIn()) {
@@ -49,34 +42,26 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     }
 
-    // Auto-redirect to home if already logged in
-    // redirectToHome();
-
-    // Attach event listeners to form submission buttons
-    if (document.body.id === 'loginPage')
+    if (document.body.id === 'loginPage') {
+        redirectToHome();
         document.getElementById('loginFormButton').addEventListener('click', submitLoginForm);
-    if (document.body.id === 'signupPage')
-        document.getElementById('signupFormButton').addEventListener('click', submitSignupForm);
-    if (document.body.id === 'bookGasPage')
-        document.getElementById('bookGasFormButton').addEventListener('click', submitGasBookingForm);
-    if (document.body.id === 'viewBookings')
-        fetchAllBookings();
-    if (document.body.id === 'viewBookings')
-        document.getElementById('cancelBookingBtn').addEventListener('click', cancelRecentBooking);
-    if (document.body.id = 'viewBookings')
-        document.getElementById('bookGasBtn').addEventListener('click', redirectToBookGas);
-
-    // Fetch recent booking details when the page loads (update as needed)
-    if (document.body.id === 'recentBookingPage') {
-        // Redirect to login if not logged in
-        redirectToLogin();
-        fetchRecentBookingDetails();
     }
 
-    // Fetch all bookings when the page loads (update as needed)
-    if (document.body.id === 'allBookingsPage') {
+    if (document.body.id === 'signupPage')
+        document.getElementById('signupFormButton').addEventListener('click', submitSignupForm);
+
+    if (document.body.id === 'bookGasPage') {
+        redirectToLogin();
+        document.getElementById('logout').addEventListener('click', logout);
+        document.getElementById('bookGasFormButton').addEventListener('click', submitGasBookingForm);
+    }
+
+    if (document.body.id === 'viewBookings') {
         redirectToLogin();
         fetchAllBookings();
+        document.getElementById('logout').addEventListener('click', logout);
+        document.getElementById('cancelBookingBtn').addEventListener('click', cancelRecentBooking);
+        document.getElementById('bookGasBtn').addEventListener('click', redirectToBookGas);
     }
 
     async function submitLoginForm() {
@@ -100,9 +85,8 @@ document.addEventListener('DOMContentLoaded', async function () {
             if (response.ok) {
                 const data = await response.json();
                 alert('Login successful!');
-                localStorage.setItem('jwtToken', data.token); // Save the JWT token
+                localStorage.setItem('jwtToken', data.token);
                 redirectToHome();
-                // Redirect to the desired page or update UI
             } else {
                 displayErrorMessage('Invalid email or password.');
             }
@@ -135,7 +119,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             if (response.ok) {
                 alert('Signup successful!');
-                // Redirect to the desired page or update UI
+                redirectToLogin();
             } else {
                 displayErrorMessage('Registration failed. Please try again later.');
             }
@@ -158,15 +142,12 @@ document.addEventListener('DOMContentLoaded', async function () {
             const response = await fetch(`${backendBaseUrl}/book-gas`, {
                 method: 'POST',
                 ...getAuthRequestOptions(), // Include authentication headers
-                // headers: {
-                //     'Content-Type': 'application/json',
-                // },
                 body: JSON.stringify({ address, email }),
             });
 
             if (response.ok) {
                 alert('Gas booking successful!');
-                // Redirect to the desired page or update UI
+                window.location.href = 'viewAllBooking.html';
             } else {
                 const errorMessage = await response.text();
                 displayErrorMessage(`Failed to book gas. ${errorMessage}`);
@@ -178,47 +159,23 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
 
-    async function fetchRecentBookingDetails() {
-        try {
-            const response = await fetch(`${backendBaseUrl}/recent-booking`, {
-                method: 'GET',
-                ...getAuthRequestOptions(), // Include authentication headers
-            });
-
-            if (response.ok) {
-                const recentBooking = await response.json();
-                const bookingIdElement = document.getElementById('bookingId');
-                const addressElement = document.getElementById('address');
-                const bookingDateElement = document.getElementById('bookingDate');
-
-                bookingIdElement.innerText = recentBooking.bookingId;
-                addressElement.innerText = recentBooking.address;
-                bookingDateElement.innerText = new Date(recentBooking.bookingDate).toLocaleString();
-            } else {
-                console.error('Error fetching recent booking details:', response.status, response.statusText);
-            }
-        } catch (error) {
-            console.error('Error during fetchRecentBookingDetails:', error);
-            // Display a generic error message
-        }
-    }
-
     async function cancelRecentBooking() {
         try {
             const response = await fetch(`${backendBaseUrl}/cancel-recent-booking`, {
                 method: 'DELETE',
-                ...getAuthRequestOptions(), // Include authentication headers
+                ...getAuthRequestOptions(),
             });
 
             if (response.ok) {
                 alert('Recent booking canceled!');
-                // Redirect to the desired page or update UI
+                window.location.reload();
             } else {
+                alert('Error canceling recent booking. Please try again later! ' + 'Reason: ' + response.statusText);
                 console.error('Error canceling recent booking:', response.status, response.statusText);
             }
         } catch (error) {
+            alert('Error cancelling recent booking. Please try again later!')
             console.error('Error during cancelRecentBooking:', error);
-            // Display a generic error message
         }
     }
 
@@ -230,7 +187,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             });
 
             if (response.ok) {
-
                 const allBookings = await response.json();
                 const allBookingsList = document.getElementById('allBookingsList');
                 console.log(allBookings);
@@ -259,13 +215,10 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
         } catch (error) {
             console.error('Error during fetchAllBookings:', error);
-            // Display a generic error message
         }
     }
-
-    // Logout function
     function logout() {
         localStorage.removeItem('jwtToken');
-        // Redirect to the login page or update UI
+        redirectToLogin();
     }
 });
