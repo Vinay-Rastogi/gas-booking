@@ -156,7 +156,7 @@ const connectToMongoDB = async () => {
   try {
     await mongoose.connect(URI, { useNewUrlParser: true, useUnifiedTopology: true });
     console.log('Connected to MongoDB');
-    app.listen(port, () => {
+    app.listen(port, '0.0.0.0', () => {
       console.log(`Server is running on port ${port}`);
     });
   } catch (err) {
