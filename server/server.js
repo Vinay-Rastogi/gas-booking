@@ -13,6 +13,8 @@ const port = 3000;
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
+app.use("/", express.static("../client"));
+
 // Replace this with your MongoDB URI
 const URI = 'mongodb+srv://lakshay2:lakshay@cluster0.jkhbko8.mongodb.net/?retryWrites=true&w=majority';
 
