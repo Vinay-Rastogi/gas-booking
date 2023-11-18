@@ -52,14 +52,14 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     if (document.body.id === 'bookGasPage') {
         redirectToLogin();
-        document.getElementById('logout').addEventListener('click', logout);
+        // document.getElementById('logout').addEventListener('click', logout);
         document.getElementById('bookGasFormButton').addEventListener('click', submitGasBookingForm);
     }
 
     if (document.body.id === 'viewBookings') {
         redirectToLogin();
         fetchAllBookings();
-        document.getElementById('logout').addEventListener('click', logout);
+        // document.getElementById('logout').addEventListener('click', logout);
         document.getElementById('cancelBookingBtn').addEventListener('click', cancelRecentBooking);
         document.getElementById('bookGasBtn').addEventListener('click', redirectToBookGas);
     }
@@ -138,24 +138,21 @@ document.addEventListener('DOMContentLoaded', async function () {
             return;
         }
 
-        try {
-            const response = await fetch(`${backendBaseUrl}/book-gas`, {
-                method: 'POST',
-                ...getAuthRequestOptions(), // Include authentication headers
-                body: JSON.stringify({ address, email }),
-            });
-
-            if (response.ok) {
-                alert('Gas booking successful!');
-                window.location.href = 'viewAllBooking.html';
-            } else {
-                const errorMessage = await response.text();
-                displayErrorMessage(`Failed to book gas. ${errorMessage}`);
+        await fetch(`${backendBaseUrl}/book-gas`, {
+            method: 'POST',
+            ...getAuthRequestOptions(), // Include authentication headers
+            body: JSON.stringify({ address, email }),
+        }).then(async res => await res.json()).then(res => {
+            if(Object.keys(res).includes("error")) {
+                displayErrorMessage(res.error)
+                return
             }
-        } catch (error) {
-            console.error('Error during gas booking:', error);
-            displayErrorMessage('An error occurred. Please try again later.');
-        }
+            console.log(res)
+        }).catch(err => {
+            if (err.error) {
+                displayErrorMessage(err.error)
+            }
+        })
     }
 
 
