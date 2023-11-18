@@ -9,7 +9,7 @@
     <title>All Bookings</title>
 </head>
 
-<body>
+<body id="viewBookings">
     <div class="container">
         <div class="page-header">
             <h1>Booked Gas</h1>
@@ -24,11 +24,12 @@
                         <ul id="allBookingsList" class="list-group">
                             <!-- List of bookings will be appended here dynamically -->
                         </ul>
-                        <div id="noBookingsMessage" style="display: none;">
+                        <div id="noBookingsMessage" class="displayMessage alert alert-info">
                             <p>There are no previous bookings.</p>
                         </div>
                         <button id="cancelBookingBtn" class="btn btn-danger" type="button">Cancel Previous
                             Booking</button>
+                        <button id="bookGasBtn" class="btn btn-danger" type="button">Book Gas</button>
                     </div>
                 </div>
             </div>

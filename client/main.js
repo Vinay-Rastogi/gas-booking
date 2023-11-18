@@ -41,6 +41,14 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     }
 
+    // function to redirect to Book Gas Page
+
+    function redirectToBookGas() {
+        if (isLoggedIn()) {
+            window.location.href = 'bookGas.html'
+        }
+    }
+
     // Auto-redirect to home if already logged in
     // redirectToHome();
 
@@ -53,8 +61,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         document.getElementById('bookGasFormButton').addEventListener('click', submitGasBookingForm);
     if (document.body.id === 'viewBookings')
         fetchAllBookings();
-    if(document.body.id === 'viewBookings')
-     document.getElementById('cancelBookingBtn').addEventListener('click',cancelRecentBooking);
+    if (document.body.id === 'viewBookings')
+        document.getElementById('cancelBookingBtn').addEventListener('click', cancelRecentBooking);
+    if (document.body.id = 'viewBookings')
+        document.getElementById('bookGasBtn').addEventListener('click', redirectToBookGas);
 
     // Fetch recent booking details when the page loads (update as needed)
     if (document.body.id === 'recentBookingPage') {
@@ -227,7 +237,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 
                 if (allBookings.length <= 0) {
                     console.log("Does Not have any Booking");
-
+                    document.getElementById('cancelBookingBtn').style.display = "none";
+                    document.getElementById('noBookingsMessage').classList.remove('displayMessage');
+                    document.getElementById('noBookingsMessage').style.color = 'red';
                 }
 
                 else {

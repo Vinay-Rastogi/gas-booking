@@ -27,7 +27,7 @@ h2 {
 
 .signup-form,
 .login-form,
-.gasBooking-form ,
+.gasBooking-form,
 .viewAllBookings-form,
 .cancelBookings-form {
   width: 390px;
@@ -43,7 +43,7 @@ h2 {
 .login-form form,
 .gasBooking-form form,
 .viewAllBookings-form form,
-.cancelBookings-form form{
+.cancelBookings-form form {
   color: #999;
   border-radius: 4%;
   margin-bottom: 15px;
@@ -68,9 +68,9 @@ h2 {
 
 .signup-form .form-group,
 .login-form .form-group,
-.gasBooking-form .form-group ,
+.gasBooking-form .form-group,
 .viewAllBookings-form .form-group,
-.cancelBookings-form .form-group{
+.cancelBookings-form .form-group {
   margin-bottom: 20px;
 }
 
@@ -85,8 +85,8 @@ h2 {
 .signup-form .btn,
 .login-form .btn,
 .gasBooking-form .btn,
-.viewAllBookings-form .btn ,
-.cancelBookings-form .btn{
+.viewAllBookings-form .btn,
+.cancelBookings-form .btn {
   font-size: 16px;
   font-weight: bold;
   background: #3598dc;
@@ -110,35 +110,34 @@ h2 {
 
 .signup-form a,
 .login-form a,
-.gasBooking-form a ,
+.gasBooking-form a,
 .viewAllBookings-form a,
-.cancelBookings-form a{
+.cancelBookings-form a {
   color: #fff;
   text-decoration: underline;
 }
 
 .signup-form a:hover,
 .login-form a:hover,
-.gasBooking-form a:hover ,
-.viewAllBookings-form a:hover
-.cancelBookings-form a:hover{
+.gasBooking-form a:hover,
+.viewAllBookings-form a:hover .cancelBookings-form a:hover {
   text-decoration: none;
 }
 
 .signup-form form a,
 .login-form form a,
-.gasBooking-form form a ,
+.gasBooking-form form a,
 .viewAllBookings-form form a,
-.cancelBookings-form form a{
+.cancelBookings-form form a {
   color: #3598dc;
   text-decoration: none;
 }
 
 .signup-form form a:hover,
 .login-form form a:hover,
-.gasBooking-form form a:hover ,
+.gasBooking-form form a:hover,
 .viewAllBookings-form form a:hover,
-.cancelBookings-form form a:hover{
+.cancelBookings-form form a:hover {
   text-decoration: underline;
 }
 
@@ -153,10 +152,12 @@ h2 {
   margin-top: 12%;
 }
 
-.gasBooking-form ,
+.gasBooking-form,
 .viewAllBookings-form,
 .cancelBookings-form {
-   
-     margin-top: 15%;
-    
-}     
+  margin-top: 15%;
+}
+
+.displayMessage {
+  display: none;
+}
