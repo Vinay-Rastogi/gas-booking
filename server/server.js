@@ -13,51 +13,50 @@ const port = 3000;
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
+// Replace this with your MongoDB URI
 const URI = 'mongodb+srv://lakshay2:lakshay@cluster0.jkhbko8.mongodb.net/?retryWrites=true&w=majority';
 
 const userSchema = new mongoose.Schema({
-  firstName: {
-    type: String,
-    required: true,
-  },
-  lastName: {
-    type: String,
-    required: true,
-  },
-  address: {
-    type: String,
-    required: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  address: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
 });
 
 const gasSchema = new mongoose.Schema({
   bookingDate: { type: String },
   email: { type: String },
-  address: { type: String }
-})
-
-const GasBooking = mongoose.model('GasBooking', gasSchema);
+  address: { type: String },
+});
 
 const User = mongoose.model('User', userSchema);
+const GasBooking = mongoose.model('GasBooking', gasSchema);
 
-const jwtSecret = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InR1c2hhcnBoMUBnbWFpbC5jb20iLCJpYXQiOjE3MDAyMjc0MzYsImV4cCI6MTcwMDIzMTAzNn0.qF4QMSLi15LgXnlV8mfpVw_qYWfPhmG0Sv_2Ht3XKzo';
+const jwtSecret = 'yourSecretKeyForJWTAuthentication';
 
+// Middleware to verify JWT token
+const verifyToken = (req, res, next) => {
+  const token = req.headers.authorization;
 
-app.post('/book-gas', async (req, res) => {
+  if (!token) {
+    return res.status(403).json({ error: 'Token not provided' });
+  }
+
+  jwt.verify(token, jwtSecret, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ error: 'Failed to authenticate token' });
+    }
+    req.user = decoded;
+    next();
+  });
+};
+
+app.post('/book-gas', verifyToken, async (req, res) => {
   try {
-    const userEmail = req.body.email;
+    const userEmail = req.user.email;
     const address = req.body.address;
 
-    // Assuming gasBookingLibrary.bookGas is modified to work with MongoDB
     const message = await gasBookingLibrary.bookGas(userEmail, address, GasBooking);
     res.json({ message });
   } catch (error) {
@@ -65,10 +64,9 @@ app.post('/book-gas', async (req, res) => {
   }
 });
 
-app.get('/user-bookings', async (req, res) => {
-
+app.get('/user-bookings', verifyToken, async (req, res) => {
   try {
-    const email = "tusharph1@gmail.com";
+    const email = req.user.email;
 
     const bookings = await gasBookingLibrary.viewAllBookings(email, GasBooking);
     res.json(bookings);
@@ -77,16 +75,15 @@ app.get('/user-bookings', async (req, res) => {
   }
 });
 
-app.delete('/cancel-recent-booking', async (req, res) => {
+app.delete('/cancel-recent-booking', verifyToken, async (req, res) => {
   try {
-    const email = "tusharph1@gmail.com"
-    const response = await gasBookingLibrary.cancelBooking(email, GasBooking)
+    const email = req.user.email;
+    const response = await gasBookingLibrary.cancelBooking(email, GasBooking);
     res.json(response);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-})
-
+});
 
 app.post('/signup', async (req, res) => {
   try {
@@ -126,6 +123,7 @@ app.post('/login', async (req, res) => {
       res.status(401).json({ error: 'Invalid email or password' });
       return;
     }
+
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (passwordMatch) {
