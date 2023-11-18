@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     if (document.body.id === 'bookGasPage') {
         redirectToLogin();
+        document.getElementById('viewAllBookings').addEventListener('click', redirectToHome);
         document.getElementById('logout').addEventListener('click', logout);
         document.getElementById('bookGasFormButton').addEventListener('click', submitGasBookingForm);
     }
@@ -131,7 +132,6 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     async function submitGasBookingForm() {
         const address = document.getElementById('address').value;
-        const email = document.getElementById('email').value;
 
         if (!address) {
             displayErrorMessage('Please enter the delivery address.');
@@ -141,8 +141,12 @@ document.addEventListener('DOMContentLoaded', async function () {
         await fetch(`${backendBaseUrl}/book-gas`, {
             method: 'POST',
             ...getAuthRequestOptions(), // Include authentication headers
-            body: JSON.stringify({ address, email }),
+            body: JSON.stringify({ address }),
         }).then(async res => await res.json()).then(res => {
+            if (response.ok) {
+                alert('Booking Succesful');
+                redirectToHome();
+            }
             if (Object.keys(res).includes("error")) {
                 displayErrorMessage(res.error)
                 return
@@ -157,23 +161,42 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 
     async function cancelRecentBooking() {
-        try {
-            const response = await fetch(`${backendBaseUrl}/cancel-recent-booking`, {
-                method: 'DELETE',
-                ...getAuthRequestOptions(),
-            });
+        // try {
+        //     const response = await fetch(`${backendBaseUrl}/cancel-recent-booking`, {
+        //         method: 'DELETE',
+        //         ...getAuthRequestOptions(),
+        //     });
 
+        //     if (response.ok) {
+        //         alert('Recent booking canceled!');
+        //         window.location.reload();
+        //     } else {
+        //         alert('Error canceling recent booking. Please try again later! ' + 'Reason: ' + response.statusText);
+        //         console.error('Error canceling recent booking:', response.status, response.statusText);
+        //     }
+        // } catch (error) {
+        //     alert('Error cancelling recent booking. Please try again later!')
+        //     console.error('Error during cancelRecentBooking:', error);
+        // }
+
+        await fetch(`${backendBaseUrl}/cancel-recent-booking`, {
+            method: 'DELETE',
+            ...getAuthRequestOptions(),
+        }).then(async res => await res.json()).then(res => {
             if (response.ok) {
                 alert('Recent booking canceled!');
                 window.location.reload();
-            } else {
-                alert('Error canceling recent booking. Please try again later! ' + 'Reason: ' + response.statusText);
-                console.error('Error canceling recent booking:', response.status, response.statusText);
             }
-        } catch (error) {
-            alert('Error cancelling recent booking. Please try again later!')
-            console.error('Error during cancelRecentBooking:', error);
-        }
+            if (Object.keys(res).includes("error")) {
+                displayErrorMessage(res.error);
+                return;
+            }
+            console.log(res);
+        }).catch(err => {
+            if (err.error) {
+                displayErrorMessage(err.error);
+            }
+        })
     }
 
     async function fetchAllBookings() {

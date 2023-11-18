@@ -6,6 +6,7 @@ body {
   /* background-position-x: -300px; */
   background-size: 100%;
   font-family: "Roboto", sans-serif;
+  overflow-y: hidden;
 }
 
 .form-control {
@@ -36,6 +37,10 @@ body {
   box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px,
     rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px,
     rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+}
+
+#gasBooking-form{
+  min-height: 270px;
 }
 
 .signup-form form,
@@ -81,7 +86,7 @@ body {
   padding-left: 10px;
 }
 
-.signup-form .btn,
+/* .signup-form .btn,
 .login-form .btn,
 .gasBooking-form .btn,
 .viewAllBookings-form .btn,
@@ -91,9 +96,9 @@ body {
   background: #3598dc;
   border: none;
   min-width: 140px;
-}
+} */
 
-.signup-form .btn:hover,
+/* .signup-form .btn:hover,
 .login-form .btn:hover,
 .gasBooking-form .btn:hover,
 .viewAllBookings-form .btn:hover,
@@ -105,7 +110,7 @@ body {
 .cancelBookings-form .btn:focus {
   background: #2389cd !important;
   outline: none;
-}
+} */
 
 .signup-form a,
 .login-form a,
@@ -155,6 +160,8 @@ body {
 .viewAllBookings-form,
 .cancelBookings-form {
   margin-top: 15%;
+  min-width: 450px;
+  min-height: 300px;
 }
 
 .displayMessage {
