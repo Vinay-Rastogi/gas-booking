@@ -1,30 +1,27 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-
-async function bookGas(userEmail, address, User, tableName) {
+async function bookGas(email, address, GasBooking) {
   try {
-    const recentBooking = await getRecentBooking(userEmail, User, tableName);
+    // Check if the user has booked within the last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    if (recentBooking) {
-      const lastBookingDate = new Date(recentBooking.BookingDate);
-      console.log("here")
-      const currentDate = new Date();
-      const sevenDaysAgo = new Date(currentDate);
-      sevenDaysAgo.setDate(currentDate.getDate() - 7);
+    const existingBooking = await GasBooking.findOne({
+      email,
+      bookingDate: { $gte: sevenDaysAgo.toISOString() },
+    });
 
-      if (lastBookingDate > sevenDaysAgo) {
-        throw new Error('You can only book gas once every 7 days.');
-      }
+    if (existingBooking) {
+      throw new Error('Cannot book gas within 7 days of the previous booking.');
     }
 
-    const booking = {
-      BookingID: 'unique_booking_id_' + Date.now(),
-      CustomerEmail: userEmail,
-      Address: address,
-      BookingDate: new Date().toISOString(),
-    };
+    // Proceed with the booking
+    const bookingDate = new Date().toISOString();
+    const booking = new GasBooking({
+      bookingDate,
+      email,
+      address,
+    });
 
-    await User.updateOne({ email: userEmail }, { $push: { [tableName]: booking } });
+    await booking.save();
 
     return 'Gas booking created successfully!';
   } catch (error) {
@@ -33,70 +30,67 @@ async function bookGas(userEmail, address, User, tableName) {
   }
 }
 
-async function getRecentBooking(userEmail, User, tableName) {
+
+async function recentBooking(email, GasBooking) {
   try {
-    const user = await User.findOne({ email: userEmail });
-    if (user && user[tableName] && user[tableName].length > 0) {
-      const bookings = user[tableName].sort((a, b) => new Date(b.BookingDate) - new Date(a.BookingDate));
-      return bookings[0];
-    }
-    return null;
-  } catch (error) {
-    console.error(error);
-    return null;
-  }
-}
+    const booking = await GasBooking.findOne({ email }).sort({ bookingDate: -1 });
 
-async function getAllBookings(userEmail, User, tableName) {
-  try {
-    const user = await User.findOne({ email: userEmail });
-    return user && user[tableName] ? user[tableName] : [];
-  } catch (error) {
-    console.error(error);
-    throw new Error('Failed to get gas bookings. ' + error.message);
-  }
-}
-
-async function cancelBooking(userEmail, bookingId, User, tableName) {
-  try {
-    const user = await User.findOne({ email: userEmail });
-    if (user && user[tableName]) {
-      const booking = user[tableName].find((b) => b.BookingID === bookingId);
-
-      if (!booking) {
-        throw new Error('Booking not found.');
-      }
-
-      const bookingDate = new Date(booking.BookingDate);
-      const currentDate = new Date();
-
-      const timeDifference = currentDate - bookingDate;
-      const hoursDifference = Math.floor(timeDifference / (1000 * 60 * 60));
-
-      if (hoursDifference <= 24) {
-        await User.updateOne({ email: userEmail }, { $pull: { [tableName]: { BookingID: bookingId } } });
-        return 'Booking canceled successfully!';
-      } else {
-        throw new Error('Cannot cancel the booking after 24 hours.');
-      }
+    if (booking) {
+      return booking;
     } else {
-      throw new Error('User or bookings not found.');
+      return null;
     }
+  } catch (error) {
+    console.error(error);
+    throw new Error('Failed to retrieve recent booking. ' + error.message);
+  }
+}
+
+async function cancelBooking(email, GasBooking) {
+  try {
+    // Find the latest booking for the specified email
+    const latestBooking = await GasBooking.findOne({ email }).sort({ bookingDate: -1 });
+
+    // Check if there is a booking to cancel
+    if (!latestBooking) {
+      throw new Error('No booking found to cancel.');
+    }
+
+    // Check if the booking is within the last 24 hours
+    const currentDateTime = new Date();
+    const bookingDateTime = new Date(latestBooking.bookingDate);
+    const hoursDifference = Math.abs(currentDateTime - bookingDateTime) / 36e5;
+
+    if (hoursDifference > 24) {
+      throw new Error('Cannot cancel a booking after 24 hours of booking date-time.');
+    }
+
+    // Proceed with cancellation
+    await GasBooking.deleteOne({ _id: latestBooking._id });
+
+    return 'Booking canceled successfully!';
   } catch (error) {
     console.error(error);
     throw new Error('Failed to cancel booking. ' + error.message);
   }
 }
+async function viewAllBookings(email, GasBooking) {
+  try {
+    const userBookings = await GasBooking.find({ email });
 
-function initJWTSecret(secret) {
-  return secret;
+    return userBookings;
+  } catch (error) {
+    console.error(error);
+    throw new Error('Failed to retrieve user bookings. ' + error.message);
+  }
 }
 
-// Export the functions
+
+
+
 module.exports = {
-  initJWTSecret,
   bookGas,
-  getRecentBooking,
+  recentBooking,
   cancelBooking,
-  getAllBookings,
+  viewAllBookings
 };

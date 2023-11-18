@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         return {
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': authToken ? `Bearer ${authToken}` : '',
+                'Authorization': authToken ? `${authToken}` : '',
             },
         };
     }
@@ -45,9 +45,16 @@ document.addEventListener('DOMContentLoaded', async function () {
     // redirectToHome();
 
     // Attach event listeners to form submission buttons
-    document.getElementById('signupFormButton').addEventListener('click', submitLoginForm);
-    document.getElementById('signupFormButton').addEventListener('click', submitSignupForm);
-    document.getElementById('bookGasFormButton').addEventListener('click', submitGasBookingForm);
+    if (document.body.id === 'loginPage')
+        document.getElementById('loginFormButton').addEventListener('click', submitLoginForm);
+    if (document.body.id === 'signupPage')
+        document.getElementById('signupFormButton').addEventListener('click', submitSignupForm);
+    if (document.body.id === 'bookGasPage')
+        document.getElementById('bookGasFormButton').addEventListener('click', submitGasBookingForm);
+    if (document.body.id === 'viewBookings')
+        fetchAllBookings();
+    if(document.body.id === 'viewBookings')
+     document.getElementById('cancelBookingBtn').addEventListener('click',cancelRecentBooking);
 
     // Fetch recent booking details when the page loads (update as needed)
     if (document.body.id === 'recentBookingPage') {
@@ -58,7 +65,6 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Fetch all bookings when the page loads (update as needed)
     if (document.body.id === 'allBookingsPage') {
-        // Redirect to login if not logged in
         redirectToLogin();
         fetchAllBookings();
     }
@@ -85,7 +91,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 const data = await response.json();
                 alert('Login successful!');
                 localStorage.setItem('jwtToken', data.token); // Save the JWT token
-                window.location.href = 'viewAllBooking.html';
+                redirectToHome();
                 // Redirect to the desired page or update UI
             } else {
                 displayErrorMessage('Invalid email or password.');
@@ -131,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     async function submitGasBookingForm() {
         const address = document.getElementById('address').value;
-        console.log(address);
+        const email = document.getElementById('email').value;
 
         if (!address) {
             displayErrorMessage('Please enter the delivery address.');
@@ -139,25 +145,28 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         try {
-            console.log("here1")
             const response = await fetch(`${backendBaseUrl}/book-gas`, {
                 method: 'POST',
                 ...getAuthRequestOptions(), // Include authentication headers
-                body: JSON.stringify({ address }),
+                // headers: {
+                //     'Content-Type': 'application/json',
+                // },
+                body: JSON.stringify({ address, email }),
             });
-            console.log("here2")
 
             if (response.ok) {
                 alert('Gas booking successful!');
                 // Redirect to the desired page or update UI
             } else {
-                displayErrorMessage('Failed to book gas. Please try again later.');
+                const errorMessage = await response.text();
+                displayErrorMessage(`Failed to book gas. ${errorMessage}`);
             }
         } catch (error) {
             console.error('Error during gas booking:', error);
             displayErrorMessage('An error occurred. Please try again later.');
         }
     }
+
 
     async function fetchRecentBookingDetails() {
         try {
@@ -205,24 +214,34 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     async function fetchAllBookings() {
         try {
-            const response = await fetch(`${backendBaseUrl}/user/bookings`, {
+            const response = await fetch(`${backendBaseUrl}/user-bookings`, {
                 method: 'GET',
                 ...getAuthRequestOptions(), // Include authentication headers
             });
 
             if (response.ok) {
-                const allBookings = await response.json();
-                const allBookingsList = document.getElementById('allBookingsList').querySelector('ul');
 
-                allBookings.forEach(booking => {
-                    const listItem = document.createElement('li');
-                    listItem.innerHTML = `
-                        <p><strong>Booking ID:</strong> <span class="booking-id">${booking.bookingId}</span></p>
+                const allBookings = await response.json();
+                const allBookingsList = document.getElementById('allBookingsList');
+                console.log(allBookings);
+
+                if (allBookings.length <= 0) {
+                    console.log("Does Not have any Booking");
+
+                }
+
+                else {
+                    allBookings.forEach(booking => {
+
+                        const listItem = document.createElement('li');
+                        listItem.innerHTML = `
                         <p><strong>Address:</strong> <span class="address">${booking.address}</span></p>
                         <p><strong>Booking Date:</strong> <span class="booking-date">${new Date(booking.bookingDate).toLocaleString()}</span></p>
                     `;
-                    allBookingsList.appendChild(listItem);
-                });
+                        allBookingsList.appendChild(listItem);
+                    });
+                }
+
             } else {
                 console.error('Error fetching all bookings:', response.status, response.statusText);
             }
