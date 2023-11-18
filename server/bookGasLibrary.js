@@ -74,6 +74,41 @@ async function cancelBooking(email, GasBooking) {
     throw new Error('Failed to cancel booking. ' + error.message);
   }
 }
+
+async function updateAddress(email, GasBooking, newAddress) {
+  try {
+    console.log(newAddress);
+    const latestBooking = await GasBooking.findOne({ email }).sort({ bookingDate: -1 });
+    console.log('Latest Booking:', latestBooking);
+
+    if (!latestBooking) {
+      throw new Error('No booking found to edit Address.');
+    }
+
+    const currentDateTime = new Date();
+    const bookingDateTime = new Date(latestBooking.bookingDate);
+    const hoursDifference = Math.abs(currentDateTime - bookingDateTime) / 36e5;
+
+    if (hoursDifference > 24) {
+      throw new Error('Cannot edit booking address after 24 hours of booking date-time.');
+    }
+
+    console.log('Updating Address to:', newAddress);
+
+    await GasBooking.updateOne(
+      { _id: latestBooking._id },
+      { $set: { address: newAddress } }
+    );
+
+    console.log('Address Updated successfully!');
+    return 'Address Updated successfully!';
+  } catch (error) {
+    console.error('Error:', error);
+    throw new Error('Failed to edit address ' + error.message);
+  }
+}
+
+
 async function viewAllBookings(email, GasBooking) {
   try {
     const userBookings = await GasBooking.find({ email });
@@ -88,9 +123,11 @@ async function viewAllBookings(email, GasBooking) {
 
 
 
+
 module.exports = {
   bookGas,
   recentBooking,
   cancelBooking,
-  viewAllBookings
+  viewAllBookings,
+  updateAddress
 };

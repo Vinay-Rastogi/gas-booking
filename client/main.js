@@ -42,6 +42,12 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     }
 
+    function redirectToEditAddress() {
+        if (isLoggedIn()) {
+            window.location.href = 'editAddress.html'
+        }
+    }
+
     if (document.body.id === 'loginPage') {
         redirectToHome();
         document.getElementById('loginFormButton').addEventListener('click', submitLoginForm);
@@ -64,6 +70,13 @@ document.addEventListener('DOMContentLoaded', async function () {
         document.getElementById('logout').addEventListener('click', logout);
         document.getElementById('cancelBookingBtn').addEventListener('click', cancelRecentBooking);
         document.getElementById('bookGasBtn').addEventListener('click', redirectToBookGas);
+        document.getElementById('editBookingAddressBtn').addEventListener('click', redirectToEditAddress);
+    }
+
+    if (document.body.id === 'editBookingAddress') {
+        document.getElementById('editBookingAddressBtn').addEventListener('click', editBookingAddress);
+        document.getElementById('viewBookings').addEventListener('click', redirectToHome);
+        document.getElementById('logout').addEventListener('click', logout);
     }
 
     async function submitLoginForm() {
@@ -157,7 +170,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             } else {
                 const errorRes = await response.json();
                 // alert(errorRes.error);
-                displayErrorMessage((errorRes.error+' Redirecting to booking page in 5 seconds') || 'An error occurred. Redirecting to booking page in 5 seconds');
+                displayErrorMessage((errorRes.error + ' Redirecting to booking page in 5 seconds') || 'An error occurred. Redirecting to booking page in 5 seconds');
                 setTimeout(redirectToHome, 5000);
             }
         } catch (error) {
@@ -187,6 +200,39 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
         } catch (error) {
             console.error('Error during cancelRecentBooking:', error);
+            displayErrorMessage('An error occurred. Please try again later.');
+        }
+    }
+
+    async function editBookingAddress() {
+        const updatedAddress = document.getElementById('address').value;
+
+        if (!updatedAddress) {
+            displayErrorMessage('Please enter the delivery address.');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${backendBaseUrl}/update-address`, {
+                method: 'PUT',
+                ...getAuthRequestOptions(),
+                body: JSON.stringify({ updatedAddress }),
+            });
+
+            if (response.ok) {
+                const res = await response.json();
+                if (res === 'Address Updated successfully!') {
+                    alert('Address Updated successfully');
+                    redirectToHome();
+                } else {
+                    displayErrorMessage('Unknown response format');
+                }
+            } else {
+                const errorRes = await response.json();
+                displayErrorMessage(errorRes.error || 'Error Updating Address');
+            }
+        } catch (error) {
+            console.log('Error during editBookingAddress:', error);
             displayErrorMessage('An error occurred. Please try again later.');
         }
     }
@@ -230,6 +276,8 @@ document.addEventListener('DOMContentLoaded', async function () {
             console.error('Error during fetchAllBookings:', error);
         }
     }
+
+
 
     function logout() {
         localStorage.removeItem('jwtToken');

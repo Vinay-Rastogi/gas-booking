@@ -75,6 +75,20 @@ app.get('/user-bookings', verifyToken, async (req, res) => {
   }
 });
 
+app.put('/update-address',verifyToken,async (req,res) => {
+
+     try{
+      const email = req.user.email;
+      const address = req.body.updatedAddress;
+      console.log('here'+address);
+      const response = await gasBookingLibrary.updateAddress(email,GasBooking,address);
+      res.json(response);
+     } catch(error){
+      res.status(505).json({error: error.message});
+     }
+
+})
+
 app.delete('/cancel-recent-booking', verifyToken, async (req, res) => {
   try {
     const email = req.user.email;
