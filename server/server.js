@@ -152,14 +152,18 @@ app.post('/login', async (req, res) => {
   }
 });
 
-mongoose
-  .connect(URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => {
+const connectToMongoDB = async () => {
+  try {
+    await mongoose.connect(URI, { useNewUrlParser: true, useUnifiedTopology: true });
     console.log('Connected to MongoDB');
     app.listen(port, () => {
       console.log(`Server is running on port ${port}`);
     });
-  })
-  .catch((err) => {
-    console.log(err);
-  });
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+// Call the async function
+connectToMongoDB();
+
