@@ -15,6 +15,11 @@ app.use(express.json());
 
 app.use("/", express.static("client"));
 
+app.get('/background-image', (req, res) => {
+  const imageUrl = './bgImg.png';
+  res.json({ imageUrl });
+});
+
 // Replace this with your MongoDB URI
 const URI = 'mongodb+srv://lakshay2:lakshay@cluster0.jkhbko8.mongodb.net/?retryWrites=true&w=majority';
 

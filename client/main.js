@@ -1,5 +1,10 @@
 document.addEventListener('DOMContentLoaded', async function () {
-    // const backendBaseUrl = 'http://localhost:3000';
+
+    const response = await fetch('/background-image');
+    const data = await response.json();
+
+    // Update the background image of the body
+    document.body.style.backgroundImage = `url(${data.imageUrl})`;
 
     function displayErrorMessage(message) {
         const errorMessageElement = document.getElementById('errorMessage');
@@ -153,7 +158,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         try {
-            const response = await fetch(`$/book-gas`, {
+            const response = await fetch(`/book-gas`, {
                 method: 'POST',
                 ...getAuthRequestOptions(),
                 body: JSON.stringify({ address }),
@@ -211,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             displayErrorMessage('Please enter the delivery address.');
             return;
         }
-        
+
         try {
             const response = await fetch(`/update-address`, {
                 method: 'PUT',
