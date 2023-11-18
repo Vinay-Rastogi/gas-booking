@@ -86,31 +86,7 @@ body {
   padding-left: 10px;
 }
 
-/* .signup-form .btn,
-.login-form .btn,
-.gasBooking-form .btn,
-.viewAllBookings-form .btn,
-.cancelBookings-form .btn {
-  font-size: 16px;
-  font-weight: bold;
-  background: #3598dc;
-  border: none;
-  min-width: 140px;
-} */
 
-/* .signup-form .btn:hover,
-.login-form .btn:hover,
-.gasBooking-form .btn:hover,
-.viewAllBookings-form .btn:hover,
-.cancelBookings-form .btn:hover,
-.signup-form .btn:focus,
-.login-form .btn:focus,
-.gasBooking-form .btn:focus,
-.viewAllBookings-form .btn:focus,
-.cancelBookings-form .btn:focus {
-  background: #2389cd !important;
-  outline: none;
-} */
 
 .signup-form a,
 .login-form a,
