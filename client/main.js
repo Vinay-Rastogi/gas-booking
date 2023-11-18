@@ -47,12 +47,13 @@ document.addEventListener('DOMContentLoaded', async function () {
         document.getElementById('loginFormButton').addEventListener('click', submitLoginForm);
     }
 
-    if (document.body.id === 'signupPage')
+    if (document.body.id === 'signupPage') {
         document.getElementById('signupFormButton').addEventListener('click', submitSignupForm);
+    }
 
     if (document.body.id === 'bookGasPage') {
         redirectToLogin();
-        document.getElementById('viewAllBookings').addEventListener('click', redirectToHome);
+        document.getElementById('viewAllBooking').addEventListener('click', () => { window.location.href = 'viewAllBooking.html' });
         document.getElementById('logout').addEventListener('click', logout);
         document.getElementById('bookGasFormButton').addEventListener('click', submitGasBookingForm);
     }
@@ -138,72 +139,63 @@ document.addEventListener('DOMContentLoaded', async function () {
             return;
         }
 
-        await fetch(`${backendBaseUrl}/book-gas`, {
-            method: 'POST',
-            ...getAuthRequestOptions(), // Include authentication headers
-            body: JSON.stringify({ address }),
-        }).then(async res => await res.json()).then(res => {
+        try {
+            const response = await fetch(`${backendBaseUrl}/book-gas`, {
+                method: 'POST',
+                ...getAuthRequestOptions(),
+                body: JSON.stringify({ address }),
+            });
+
             if (response.ok) {
-                alert('Booking Succesful');
-                redirectToHome();
+                const res = await response.json();
+                if (res.message) {
+                    alert('Booking Successful!');
+                    redirectToHome();
+                } else {
+                    displayErrorMessage('Unknown response format');
+                }
+            } else {
+                const errorRes = await response.json();
+                // alert(errorRes.error);
+                displayErrorMessage((errorRes.error+' Redirecting to booking page in 5 seconds') || 'An error occurred. Redirecting to booking page in 5 seconds');
+                setTimeout(redirectToHome, 5000);
             }
-            if (Object.keys(res).includes("error")) {
-                displayErrorMessage(res.error)
-                return
-            }
-            console.log(res)
-        }).catch(err => {
-            if (err.error) {
-                displayErrorMessage(err.error)
-            }
-        })
+        } catch (error) {
+            console.error('Error during gas booking:', error);
+            displayErrorMessage('An error occurred. Please try again later.');
+        }
     }
 
-
     async function cancelRecentBooking() {
-        // try {
-        //     const response = await fetch(`${backendBaseUrl}/cancel-recent-booking`, {
-        //         method: 'DELETE',
-        //         ...getAuthRequestOptions(),
-        //     });
+        try {
+            const response = await fetch(`${backendBaseUrl}/cancel-recent-booking`, {
+                method: 'DELETE',
+                ...getAuthRequestOptions(),
+            });
 
-        //     if (response.ok) {
-        //         alert('Recent booking canceled!');
-        //         window.location.reload();
-        //     } else {
-        //         alert('Error canceling recent booking. Please try again later! ' + 'Reason: ' + response.statusText);
-        //         console.error('Error canceling recent booking:', response.status, response.statusText);
-        //     }
-        // } catch (error) {
-        //     alert('Error cancelling recent booking. Please try again later!')
-        //     console.error('Error during cancelRecentBooking:', error);
-        // }
-
-        await fetch(`${backendBaseUrl}/cancel-recent-booking`, {
-            method: 'DELETE',
-            ...getAuthRequestOptions(),
-        }).then(async res => await res.json()).then(res => {
             if (response.ok) {
-                alert('Recent booking canceled!');
-                window.location.reload();
+                const res = await response.json();
+                if (res === 'Booking canceled successfully!') {
+                    alert('Last booking canceled!');
+                    window.location.reload();
+                } else {
+                    displayErrorMessage('Unknown response format');
+                }
+            } else {
+                const errorRes = await response.json();
+                displayErrorMessage(errorRes.error || 'Error canceling recent booking.');
             }
-            if (Object.keys(res).includes("error")) {
-                displayErrorMessage(res.error);
-                return;
-            }
-            console.log(res);
-        }).catch(err => {
-            if (err.error) {
-                displayErrorMessage(err.error);
-            }
-        })
+        } catch (error) {
+            console.error('Error during cancelRecentBooking:', error);
+            displayErrorMessage('An error occurred. Please try again later.');
+        }
     }
 
     async function fetchAllBookings() {
         try {
             const response = await fetch(`${backendBaseUrl}/user-bookings`, {
                 method: 'GET',
-                ...getAuthRequestOptions(), // Include authentication headers
+                ...getAuthRequestOptions(),
             });
 
             if (response.ok) {
@@ -216,25 +208,21 @@ document.addEventListener('DOMContentLoaded', async function () {
                     document.getElementById('cancelBookingBtn').style.display = "none";
                     document.getElementById('noBookingsMessage').classList.remove('displayMessage');
                     document.getElementById('noBookingsMessage').style.color = 'red';
-                }
-
-                else {
+                } else {
+                    allBookings.sort((a, b) => new Date(b.bookingDate) - new Date(a.bookingDate));
                     allBookings.forEach(booking => {
-
                         document.getElementById('allBookingsList').style.color = 'black';
                         const listItem = document.createElement('li');
                         listItem.style.padding = '1%';
                         listItem.innerHTML = `
-                        <p><strong>Address:</strong> <span class="address">${booking.address}</span></p>
-                        <p><strong>Booking Date:</strong> <span class="booking-date">${new Date(booking.bookingDate).toLocaleString()}</span></p>
-                        <hr>
-                    `;
+                            <p><strong>Booking ID:</strong> <span class="address">${booking._id}</span></p>
+                            <p><strong>Address:</strong> <span class="address">${booking.address}</span></p>
+                            <p><strong>Booking Date:</strong> <span class="booking-date">${new Date(booking.bookingDate).toLocaleString()}</span></p>
+                            <hr>
+                        `;
                         allBookingsList.appendChild(listItem);
                     });
-
-
                 }
-
             } else {
                 console.error('Error fetching all bookings:', response.status, response.statusText);
             }
@@ -242,6 +230,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             console.error('Error during fetchAllBookings:', error);
         }
     }
+
     function logout() {
         localStorage.removeItem('jwtToken');
         redirectToLogin();
