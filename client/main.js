@@ -201,6 +201,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 else {
                     allBookings.forEach(booking => {
 
+                        document.getElementById('allBookingsList').style.color = 'black';
                         const listItem = document.createElement('li');
                         listItem.innerHTML = `
                         <p><strong>Address:</strong> <span class="address">${booking.address}</span></p>

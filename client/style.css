@@ -1,12 +1,9 @@
 body {
   color: #fff;
-  background-image: url(./bgImg.png) !important;
+  background-image: url(../bgImg.png) !important;
   background-repeat: repeat;
   background-size: 100%;
   font-family: "Roboto", sans-serif;
-}
-
-h2 {
 }
 
 .form-control {
@@ -160,4 +157,18 @@ h2 {
 
 .displayMessage {
   display: none;
+}
+
+.container {
+  height: 700px;
+  width: 500px;
+  margin-top: 10%;
+  margin-left: 10%;
+}
+
+.bookingContainer {
+  height: 700px;
+  width: 500px;
+  margin-top: 10%;
+  margin-left: 1.5%;
 }
