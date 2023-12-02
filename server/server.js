@@ -1,46 +1,30 @@
+require('dotenv').config();
+
 const express = require('express');
-const gasBookingLibrary = require('./bookGasLibrary');
 const cors = require('cors');
-const bcrypt = require('bcrypt');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
+const AWS = require('aws-sdk');
+const bcrypt = require('bcrypt');
 
 const app = express();
-app.use(cors());
 const port = 3000;
 
+app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.use("/", express.static("client"));
-
-app.get('/background-image', (req, res) => {
-  const imageUrl = './bgImg.png';
-  res.json({ imageUrl });
+// Configure AWS DynamoDB
+AWS.config.update({
+  region: process.env.AWS_REGION,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });
 
-// Replace this with your MongoDB URI
-const URI = 'mongodb+srv://lakshay2:lakshay@cluster0.jkhbko8.mongodb.net/?retryWrites=true&w=majority';
-
-const userSchema = new mongoose.Schema({
-  firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
-  address: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-});
-
-const gasSchema = new mongoose.Schema({
-  bookingDate: { type: String },
-  email: { type: String },
-  address: { type: String },
-});
-
-const User = mongoose.model('User', userSchema);
-const GasBooking = mongoose.model('GasBooking', gasSchema);
-
-const jwtSecret = 'yourSecretKeyForJWTAuthentication';
+const dynamoDB = new AWS.DynamoDB.DocumentClient();
+const gasBookingTableName = process.env.DYNAMODB_TABLE_GAS_BOOKINGS;
+const usersTableName = process.env.DYNAMODB_TABLE_USERS;
+const jwtSecret = process.env.JWT_SECRET;
 
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
@@ -59,118 +43,297 @@ const verifyToken = (req, res, next) => {
   });
 };
 
+// Endpoint to get background image
+app.get('/background-image', (req, res) => {
+  const imageUrl = './bgImg.png';
+  res.json({ imageUrl });
+});
+
+// Endpoint for user signup
+app.post('/signup', async (req, res) => {
+  try {
+    const { firstName, lastName, address, email, password } = req.body;
+
+    // Check if the user already exists
+    const existingUser = await getUserByEmail(email);
+
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already exists. Please choose a different email.' });
+    }
+
+    // Hash the password before storing it
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Save the user to DynamoDB
+    await saveUserToDynamoDB(firstName, lastName, address, email, hashedPassword);
+
+    res.json({ message: 'User signup successful!' });
+  } catch (error) {
+    console.error('Error during user signup:', error);
+    res.status(500).json({ error: 'Failed to perform user signup.' });
+  }
+});
+
+// Endpoint for user login
+app.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Retrieve user from DynamoDB based on email
+    const user = await getUserByEmail(email);
+
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    // Compare the provided password with the stored hashed password
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (passwordMatch) {
+      const token = jwt.sign({ email: user.email }, jwtSecret, { expiresIn: '1h' });
+      res.json({ message: 'User login successful!', token });
+    } else {
+      res.status(401).json({ error: 'Invalid email or password' });
+    }
+  } catch (error) {
+    console.error('Error during user login:', error);
+    res.status(500).json({ error: 'Failed to perform user login.' });
+  }
+});
+
+// Endpoint for gas booking
 app.post('/book-gas', verifyToken, async (req, res) => {
   try {
     const userEmail = req.user.email;
     const address = req.body.address;
 
-    const message = await gasBookingLibrary.bookGas(userEmail, address, GasBooking);
+    const message = await bookGas(userEmail, address);
     res.json({ message });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
+// Endpoint to view all user bookings
 app.get('/user-bookings', verifyToken, async (req, res) => {
   try {
     const email = req.user.email;
 
-    const bookings = await gasBookingLibrary.viewAllBookings(email, GasBooking);
+    const bookings = await viewAllBookings(email);
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-app.put('/update-address',verifyToken,async (req,res) => {
-
-     try{
-      const email = req.user.email;
-      const address = req.body.updatedAddress;
-      console.log('here'+address);
-      const response = await gasBookingLibrary.updateAddress(email,GasBooking,address);
-      res.json(response);
-     } catch(error){
-      res.status(505).json({error: error.message});
-     }
-
-})
-
-app.delete('/cancel-recent-booking', verifyToken, async (req, res) => {
+// Endpoint to update user address
+app.put('/update-address', verifyToken, async (req, res) => {
   try {
     const email = req.user.email;
-    const response = await gasBookingLibrary.cancelBooking(email, GasBooking);
+    const address = req.body.updatedAddress;
+
+    const response = await updateAddress(email, address);
     res.json(response);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-app.post('/signup', async (req, res) => {
+// Endpoint to cancel the most recent booking
+app.delete('/cancel-recent-booking', verifyToken, async (req, res) => {
   try {
-    const { firstName, lastName, address, email, password } = req.body;
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ error: 'Email already exists. Please choose a different email.' });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    const user = new User({
-      firstName,
-      lastName,
-      address,
-      email,
-      password: hashedPassword,
-    });
-
-    await user.save();
-
-    res.json({ message: 'Customer signup successful!' });
+    const email = req.user.email;
+    const response = await cancelBooking(email);
+    res.json(response);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-app.post('/login', async (req, res) => {
+// Function to retrieve user by email from DynamoDB
+async function getUserByEmail(email) {
+  const params = {
+    TableName: usersTableName,
+    Key: {
+      email: email,
+    },
+  };
+
+  const result = await dynamoDB.get(params).promise();
+
+  return result.Item;
+}
+
+// Function to save user to DynamoDB
+async function saveUserToDynamoDB(firstName, lastName, address, email, password) {
+  const params = {
+    TableName: usersTableName,
+    Item: {
+      firstName: firstName,
+      lastName: lastName,
+      address: address,
+      email: email,
+      password: password,
+    },
+  };
+
+  await dynamoDB.put(params).promise();
+}
+
+// Function to book gas
+async function bookGas(email, address) {
   try {
-    const { email, password } = req.body;
+    // Check if the user has booked within the last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const user = await User.findOne({ email });
+    const existingBooking = await getRecentBooking(email, sevenDaysAgo.toISOString());
 
-    if (!user) {
-      res.status(401).json({ error: 'Invalid email or password' });
-      return;
+    if (existingBooking) {
+      throw new Error('Cannot book gas within 7 days of the previous booking.');
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    // Proceed with the booking
+    const bookingDate = new Date().toISOString();
+    const booking = {
+      bookingDate: bookingDate,
+      email: email,
+      address: address,
+    };
 
-    if (passwordMatch) {
-      const token = jwt.sign({ email: user.email }, jwtSecret, { expiresIn: '1h' });
-      res.json({ message: 'Login successful!', token });
-    } else {
-      res.status(401).json({ error: 'Invalid email or password' });
-    }
+    await saveGasBookingToDynamoDB(booking);
+
+    return 'Gas booking created successfully!';
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error during gas booking:', error);
+    throw new Error('Failed to book gas. ' + error.message);
   }
-});
+}
 
-const connectToMongoDB = async () => {
+// Function to get the most recent booking
+async function getRecentBooking(email, startDate) {
+  const params = {
+    TableName: gasBookingTableName,
+    IndexName: 'email-bookingDate-index',
+    KeyConditionExpression: 'email = :email AND bookingDate >= :startDate',
+    ExpressionAttributeValues: {
+      ':email': email,
+      ':startDate': startDate,
+    },
+    ScanIndexForward: false,
+    Limit: 1,
+  };
+
+  const result = await dynamoDB.query(params).promise();
+
+  return result.Items.length > 0 ? result.Items[0] : null;
+}
+
+// Function to save gas booking to DynamoDB
+async function saveGasBookingToDynamoDB(booking) {
+  const params = {
+    TableName: gasBookingTableName,
+    Item: booking,
+  };
+
+  await dynamoDB.put(params).promise();
+}
+
+// Function to view all user bookings
+async function viewAllBookings(email) {
+  const params = {
+    TableName: gasBookingTableName,
+    IndexName: 'email-bookingDate-index',
+    KeyConditionExpression: 'email = :email',
+    ExpressionAttributeValues: {
+      ':email': email,
+    },
+    ScanIndexForward: false,
+  };
+
+  const result = await dynamoDB.query(params).promise();
+
+  return result.Items;
+}
+
+// Function to update user address
+async function updateAddress(email, newAddress) {
   try {
-    await mongoose.connect(URI, { useNewUrlParser: true, useUnifiedTopology: true });
-    console.log('Connected to MongoDB');
-    app.listen(port, '0.0.0.0', () => {
-      console.log(`Server is running on port ${port}`);
-    });
-  } catch (err) {
-    console.error(err);
+    console.log(newAddress);
+    const latestBooking = await getRecentBooking(email, '1970-01-01T00:00:00.000Z');
+
+    if (!latestBooking) {
+      throw new Error('No booking found to edit Address.');
+    }
+
+    const currentDateTime = new Date();
+    const bookingDateTime = new Date(latestBooking.bookingDate);
+    const hoursDifference = Math.abs(currentDateTime - bookingDateTime) / 36e5;
+
+    if (hoursDifference > 24) {
+      throw new Error('Cannot edit booking address after 24 hours of booking date-time.');
+    }
+
+    console.log('Updating Address to:', newAddress);
+
+    await dynamoDB.update({
+      TableName: gasBookingTableName,
+      Key: {
+        email: email,
+        bookingDate: latestBooking.bookingDate,
+      },
+      UpdateExpression: 'SET #address = :newAddress',
+      ExpressionAttributeNames: {
+        '#address': 'address',
+      },
+      ExpressionAttributeValues: {
+        ':newAddress': newAddress,
+      },
+    }).promise();
+
+    console.log('Address Updated successfully!');
+    return 'Address Updated successfully!';
+  } catch (error) {
+    console.error('Error during updating address:', error);
+    throw new Error('Failed to update address ' + error.message);
   }
-};
+}
 
-// Call the async function
-connectToMongoDB();
+// Function to cancel the most recent booking
+async function cancelBooking(email) {
+  try {
+    const latestBooking = await getRecentBooking(email, '1970-01-01T00:00:00.000Z');
 
+    if (!latestBooking) {
+      throw new Error('No booking found to cancel.');
+    }
+
+    // Check if the booking is within the last 24 hours
+    const currentDateTime = new Date();
+    const bookingDateTime = new Date(latestBooking.bookingDate);
+    const hoursDifference = Math.abs(currentDateTime - bookingDateTime) / 36e5;
+
+    if (hoursDifference > 24) {
+      throw new Error('Cannot cancel a booking after 24 hours of booking date-time.');
+    }
+
+    // Proceed with cancellation
+    await dynamoDB.delete({
+      TableName: gasBookingTableName,
+      Key: {
+        email: email,
+        bookingDate: latestBooking.bookingDate,
+      },
+    }).promise();
+
+    return 'Booking canceled successfully!';
+  } catch (error) {
+    console.error('Error during canceling booking:', error);
+    throw new Error('Failed to cancel booking. ' + error.message);
+  }
+}
+
+// Start the server
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server is running on port ${port}`);
+});

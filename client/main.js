@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', async function () {
 
-    const response = await fetch('/background-image');
+    const response = await fetch('http://localhost:3000/background-image');
     const data = await response.json();
 
     // Update the background image of the body
@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         try {
-            const response = await fetch(`/login`, {
+            const response = await fetch(`http://localhost:3000/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         try {
-            const response = await fetch(`/signup`, {
+            const response = await fetch(`http://localhost:3000/signup`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         try {
-            const response = await fetch(`/book-gas`, {
+            const response = await fetch(`http://localhost:3000/book-gas`, {
                 method: 'POST',
                 ...getAuthRequestOptions(),
                 body: JSON.stringify({ address }),
@@ -174,7 +174,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                 }
             } else {
                 const errorRes = await response.json();
-                // alert(errorRes.error);
                 displayErrorMessage((errorRes.error + ' Redirecting to booking page in 5 seconds') || 'An error occurred. Redirecting to booking page in 5 seconds');
                 setTimeout(redirectToHome, 5000);
             }
@@ -186,7 +185,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     async function cancelRecentBooking() {
         try {
-            const response = await fetch(`/cancel-recent-booking`, {
+            const response = await fetch(`http://localhost:3000/cancel-recent-booking`, {
                 method: 'DELETE',
                 ...getAuthRequestOptions(),
             });
@@ -218,7 +217,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         try {
-            const response = await fetch(`/update-address`, {
+            const response = await fetch(`http://localhost:3000/update-address`, {
                 method: 'PUT',
                 ...getAuthRequestOptions(),
                 body: JSON.stringify({ updatedAddress }),
@@ -244,7 +243,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     async function fetchAllBookings() {
         try {
-            const response = await fetch(`/user-bookings`, {
+            const response = await fetch(`http://localhost:3000/user-bookings`, {
                 method: 'GET',
                 ...getAuthRequestOptions(),
             });
@@ -261,12 +260,12 @@ document.addEventListener('DOMContentLoaded', async function () {
                     document.getElementById('noBookingsMessage').style.color = 'red';
                 } else {
                     allBookings.sort((a, b) => new Date(b.bookingDate) - new Date(a.bookingDate));
-                    allBookings.forEach(booking => {
+                    allBookings.forEach((booking,index) => {
                         document.getElementById('allBookingsList').style.color = 'black';
                         const listItem = document.createElement('li');
                         listItem.style.padding = '1%';
                         listItem.innerHTML = `
-                            <p><strong>Booking ID:</strong> <span class="address">${booking._id}</span></p>
+                            <p><strong>Booking ID:</strong> <span class="address">${index+1}</span></p>
                             <p><strong>Address:</strong> <span class="address">${booking.address}</span></p>
                             <p><strong>Booking Date:</strong> <span class="booking-date">${new Date(booking.bookingDate).toLocaleString()}</span></p>
                             <hr>
@@ -281,8 +280,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             console.error('Error during fetchAllBookings:', error);
         }
     }
-
-
 
     function logout() {
         localStorage.removeItem('jwtToken');
