@@ -6,25 +6,35 @@ const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const AWS = require('aws-sdk');
 const bcrypt = require('bcrypt');
+const path = require("path")
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 8080;
+
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'http://test-env.eba-ryprfkss.us-east-1.elasticbeanstalk.com');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+});
 
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
+app.use("/", express.static(path.join(__dirname, "..", "client")))
+
 // Configure AWS DynamoDB
 AWS.config.update({
-  region: process.env.AWS_REGION,
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: 'us-east-1',
+  accessKeyId: 'AKIA2GSKERJERU6GFI4Y',
+  secretAccessKey: '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',
 });
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
-const gasBookingTableName = process.env.DYNAMODB_TABLE_GAS_BOOKINGS;
-const usersTableName = process.env.DYNAMODB_TABLE_USERS;
-const jwtSecret = process.env.JWT_SECRET;
+const gasBookingTableName = 'GasBookings';
+const usersTableName = 'Users';
+const jwtSecret = 'your_jwt_secret';
 
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
@@ -332,6 +342,8 @@ async function cancelBooking(email) {
     throw new Error('Failed to cancel booking. ' + error.message);
   }
 }
+
+app.use("*", (_, res) => res.redirect("/login.html"))
 
 // Start the server
 app.listen(port, '0.0.0.0', () => {
