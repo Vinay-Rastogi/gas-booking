@@ -1,4 +1,14 @@
-require('dotenv').config();
+const {
+  getUserByEmail,
+  saveUserToDynamoDB,
+  bookGas,
+  getRecentBooking,
+  saveGasBookingToDynamoDB,
+  viewAllBookings,
+  updateAddress,
+  cancelBooking
+} = require('./bookGasLibrary.js');
+
 
 const express = require('express');
 const cors = require('cors');
@@ -35,6 +45,7 @@ const dynamoDB = new AWS.DynamoDB.DocumentClient();
 const gasBookingTableName = 'GasBookings';
 const usersTableName = 'Users';
 const jwtSecret = 'your_jwt_secret';
+const IndexName = 'email-bookingDate-index';
 
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
@@ -65,7 +76,7 @@ app.post('/signup', async (req, res) => {
     const { firstName, lastName, address, email, password } = req.body;
 
     // Check if the user already exists
-    const existingUser = await getUserByEmail(email);
+    const existingUser = await getUserByEmail(dynamoDB, email, usersTableName);
 
     if (existingUser) {
       return res.status(400).json({ error: 'Email already exists. Please choose a different email.' });
@@ -75,7 +86,7 @@ app.post('/signup', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Save the user to DynamoDB
-    await saveUserToDynamoDB(firstName, lastName, address, email, hashedPassword);
+    await saveUserToDynamoDB(dynamoDB, firstName, lastName, address, email, hashedPassword, usersTableName);
 
     res.json({ message: 'User signup successful!' });
   } catch (error) {
@@ -90,7 +101,7 @@ app.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     // Retrieve user from DynamoDB based on email
-    const user = await getUserByEmail(email);
+    const user = await getUserByEmail(dynamoDB, email, usersTableName);
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });
@@ -117,7 +128,7 @@ app.post('/book-gas', verifyToken, async (req, res) => {
     const userEmail = req.user.email;
     const address = req.body.address;
 
-    const message = await bookGas(userEmail, address);
+    const message = await bookGas(dynamoDB, userEmail, address, gasBookingTableName, IndexName);
     res.json({ message });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -129,7 +140,7 @@ app.get('/user-bookings', verifyToken, async (req, res) => {
   try {
     const email = req.user.email;
 
-    const bookings = await viewAllBookings(email);
+    const bookings = await viewAllBookings(dynamoDB, email, gasBookingTableName, IndexName);
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -142,7 +153,7 @@ app.put('/update-address', verifyToken, async (req, res) => {
     const email = req.user.email;
     const address = req.body.updatedAddress;
 
-    const response = await updateAddress(email, address);
+    const response = await updateAddress(dynamoDB, email, newAddress, gasBookingTableName, IndexName);
     res.json(response);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -153,195 +164,14 @@ app.put('/update-address', verifyToken, async (req, res) => {
 app.delete('/cancel-recent-booking', verifyToken, async (req, res) => {
   try {
     const email = req.user.email;
-    const response = await cancelBooking(email);
+    const response = await cancelBooking(dynamoDB, email, gasBookingTableName, IndexName);
     res.json(response);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Function to retrieve user by email from DynamoDB
-async function getUserByEmail(email) {
-  const params = {
-    TableName: usersTableName,
-    Key: {
-      email: email,
-    },
-  };
 
-  const result = await dynamoDB.get(params).promise();
-
-  return result.Item;
-}
-
-// Function to save user to DynamoDB
-async function saveUserToDynamoDB(firstName, lastName, address, email, password) {
-  const params = {
-    TableName: usersTableName,
-    Item: {
-      firstName: firstName,
-      lastName: lastName,
-      address: address,
-      email: email,
-      password: password,
-    },
-  };
-
-  await dynamoDB.put(params).promise();
-}
-
-// Function to book gas
-async function bookGas(email, address) {
-  try {
-    // Check if the user has booked within the last 7 days
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    const existingBooking = await getRecentBooking(email, sevenDaysAgo.toISOString());
-
-    if (existingBooking) {
-      throw new Error('Cannot book gas within 7 days of the previous booking.');
-    }
-
-    // Proceed with the booking
-    const bookingDate = new Date().toISOString();
-    const booking = {
-      bookingDate: bookingDate,
-      email: email,
-      address: address,
-    };
-
-    await saveGasBookingToDynamoDB(booking);
-
-    return 'Gas booking created successfully!';
-  } catch (error) {
-    console.error('Error during gas booking:', error);
-    throw new Error('Failed to book gas. ' + error.message);
-  }
-}
-
-// Function to get the most recent booking
-async function getRecentBooking(email, startDate) {
-  const params = {
-    TableName: gasBookingTableName,
-    IndexName: 'email-bookingDate-index',
-    KeyConditionExpression: 'email = :email AND bookingDate >= :startDate',
-    ExpressionAttributeValues: {
-      ':email': email,
-      ':startDate': startDate,
-    },
-    ScanIndexForward: false,
-    Limit: 1,
-  };
-
-  const result = await dynamoDB.query(params).promise();
-
-  return result.Items.length > 0 ? result.Items[0] : null;
-}
-
-// Function to save gas booking to DynamoDB
-async function saveGasBookingToDynamoDB(booking) {
-  const params = {
-    TableName: gasBookingTableName,
-    Item: booking,
-  };
-
-  await dynamoDB.put(params).promise();
-}
-
-// Function to view all user bookings
-async function viewAllBookings(email) {
-  const params = {
-    TableName: gasBookingTableName,
-    IndexName: 'email-bookingDate-index',
-    KeyConditionExpression: 'email = :email',
-    ExpressionAttributeValues: {
-      ':email': email,
-    },
-    ScanIndexForward: false,
-  };
-
-  const result = await dynamoDB.query(params).promise();
-
-  return result.Items;
-}
-
-// Function to update user address
-async function updateAddress(email, newAddress) {
-  try {
-    console.log(newAddress);
-    const latestBooking = await getRecentBooking(email, '1970-01-01T00:00:00.000Z');
-
-    if (!latestBooking) {
-      throw new Error('No booking found to edit Address.');
-    }
-
-    const currentDateTime = new Date();
-    const bookingDateTime = new Date(latestBooking.bookingDate);
-    const hoursDifference = Math.abs(currentDateTime - bookingDateTime) / 36e5;
-
-    if (hoursDifference > 24) {
-      throw new Error('Cannot edit booking address after 24 hours of booking date-time.');
-    }
-
-    console.log('Updating Address to:', newAddress);
-
-    await dynamoDB.update({
-      TableName: gasBookingTableName,
-      Key: {
-        email: email,
-        bookingDate: latestBooking.bookingDate,
-      },
-      UpdateExpression: 'SET #address = :newAddress',
-      ExpressionAttributeNames: {
-        '#address': 'address',
-      },
-      ExpressionAttributeValues: {
-        ':newAddress': newAddress,
-      },
-    }).promise();
-
-    console.log('Address Updated successfully!');
-    return 'Address Updated successfully!';
-  } catch (error) {
-    console.error('Error during updating address:', error);
-    throw new Error('Failed to update address ' + error.message);
-  }
-}
-
-// Function to cancel the most recent booking
-async function cancelBooking(email) {
-  try {
-    const latestBooking = await getRecentBooking(email, '1970-01-01T00:00:00.000Z');
-
-    if (!latestBooking) {
-      throw new Error('No booking found to cancel.');
-    }
-
-    // Check if the booking is within the last 24 hours
-    const currentDateTime = new Date();
-    const bookingDateTime = new Date(latestBooking.bookingDate);
-    const hoursDifference = Math.abs(currentDateTime - bookingDateTime) / 36e5;
-
-    if (hoursDifference > 24) {
-      throw new Error('Cannot cancel a booking after 24 hours of booking date-time.');
-    }
-
-    // Proceed with cancellation
-    await dynamoDB.delete({
-      TableName: gasBookingTableName,
-      Key: {
-        email: email,
-        bookingDate: latestBooking.bookingDate,
-      },
-    }).promise();
-
-    return 'Booking canceled successfully!';
-  } catch (error) {
-    console.error('Error during canceling booking:', error);
-    throw new Error('Failed to cancel booking. ' + error.message);
-  }
-}
 
 app.use("*", (_, res) => res.redirect("/login.html"))
 
